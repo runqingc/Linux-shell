@@ -98,7 +98,8 @@ int compute_num_args(const char *line){
 char **separate_args(char *line, int *argc, bool *is_builtin){
 
     *argc = compute_num_args(line);
-    char** argv = (char**) malloc (sizeof (char *)*3);
+    
+    char** argv = (char**) malloc (sizeof (char *)*(*argc+1));
     int start=-1, end=0, cnt=0;
     while(true){
         if(line[end]!=' ' && line[end]!='\0'){
@@ -126,19 +127,24 @@ char **separate_args(char *line, int *argc, bool *is_builtin){
 }
 
 int evaluate(msh_t *shell, char *line){
+    if(!line) return 0;
     // check if the line surpasses the maximum number of characters
     if(strlen(line)>shell->max_line){
         printf("error: reached the maximum line limit\n");
         // assume 1 is an error code
         return 1;
     }
-
     // assume is_builtin_temp is true, this argument will be developed in the future
     bool is_builtin_temp = true;
     char **argv;
     int argc;
     // parse the line using separate_args
     argv = separate_args(line, &argc, &is_builtin_temp);
+    
+    if(argc==0){
+        return 0;
+    }
+
     //out put the result
     int i=0;
     for( ; i<argc; ++i){
@@ -146,6 +152,7 @@ int evaluate(msh_t *shell, char *line){
     }
     printf("argc=%d\n", argc);
     // assume it will always return 0 for now, implement in the following homework
+    
     return 0;
 }
 
