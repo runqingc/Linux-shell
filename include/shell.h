@@ -41,3 +41,16 @@ msh_t *alloc_shell(int max_jobs, int max_line, int max_history);
 char *parse_tok(char *line, int *job_type);
 
 
+/**
+* separate_args: Separates the arguments of command and places them in an allocated array returned by this function
+*
+* line: the command line to separate. This function assumes only a single command that takes in zero or more arguments.
+*
+* argc: Stores the number of arguments produced at the memory location of the argc pointer.
+*
+* is_builtin: true if the command is a built-in command; otherwise false.
+*
+* Returns: NULL is line contains no arguments; otherwise, a newly allocated array of strings that represents the arguments of the command (similar to argv). Make sure the array includes a NULL value in its last location.
+* Note: The user is responsible for freeing the memory return by this function!
+*/
+char **separate_args(char *line, int *argc, bool *is_builtin);

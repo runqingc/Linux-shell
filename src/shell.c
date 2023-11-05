@@ -1,6 +1,7 @@
 #include "shell.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 
 // If any of these parameters are equal to 0 in alloc_shell
@@ -88,4 +89,57 @@ char *parse_tok(char *line, int *job_type){
     }
 
     return start;
+}
+
+
+// code reuse from hw4
+int compute_num_args(const char *line){
+    const char* i = line;
+    int cnt=0;
+    bool flag = true;
+    while(*i){
+        if(*i==' '){
+            flag = true;
+        }else{
+            if(flag){
+                ++cnt;
+                flag = false;
+            }
+        }
+        ++i;
+    }
+    return cnt;
+}
+
+
+char **separate_args(char *line, int *argc, bool *is_builtin){
+
+    *argc = compute_num_args(line);
+    char** argv = (char**) malloc (sizeof (char *)*3);
+    int start=-1, end=0, cnt=0;
+    while(true){
+        if(line[end]!=' '){
+            // the first valid char of this argument
+            if(start==-1){
+                start = end;
+            }
+            ++end;
+        }
+
+        if(line[end]==' ' || line[end]=='\0'){
+            // first space after a series of valid chars
+            if(start>=0){
+                argv[cnt] = (char *) malloc(sizeof (char )*(end-start+2));
+                memcpy(argv[cnt], line+start, end-start+1);
+                argv[cnt][end-start+1] = '\0';
+                ++cnt;
+                start = -1;
+            }
+            // if meet the null value
+            if(!line[end]) break;
+            ++end;
+        }
+    }
+    argv[*argc] = NULL;
+    return argv;
 }
