@@ -68,3 +68,12 @@ char **separate_args(char *line, int *argc, bool *is_builtin);
 * Returns: non-zero if the command executed wants the shell program to close. Otherwise, a 0 is returned.
 */
 int evaluate(msh_t *shell, char *line);
+
+
+/*
+* exit_shell - Closes down the shell by deallocating the shell state.
+*
+* shell - the current shell state value
+*
+*/
+void exit_shell(msh_t *shell);
