@@ -7,7 +7,9 @@
 int main(){
     printf("\n\n------------------------\nHere 's msh.c\n");
 
-    char *cmd_line="ls -la & cd .. ; cat file.txt";
+    // should it be []? unless I cannot modify it
+    // should I strip the space at the end of each job string?
+    char cmd_line[]="; ls -la &  ; cat  file.txt   ";
     int type;
     char *job;
     job = parse_tok(cmd_line,&type);

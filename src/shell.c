@@ -1,5 +1,6 @@
 #include "shell.h"
-
+#include <stdlib.h>
+#include <stdbool.h>
 
 
 // If any of these parameters are equal to 0 in alloc_shell
@@ -40,21 +41,51 @@ msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
 */
 char *parse_tok(char *line, int *job_type){
 
+    // static point reuse as means to return back the portions of the string
     static char* buffer;
+    
     if(line){
         buffer = line;
     }
 
-    
+    // nothing to parse if buffer is NULL
     if(!buffer){
-        job_type = (int*) malloc (sizeof(int));
-        job_type = -1;
+        if(job_type) *job_type = -1;
         return NULL;
     }
 
+    // skip leading spaces
+    while (*buffer == ' ') {
+        buffer++;
+    }
 
+    // Check if the command line is empty or has no command
+    // before the control character
+    if (*buffer == '\0' || *buffer == '&' || *buffer == ';') {
+        *job_type = -1;
+        if(*buffer == '&' || *buffer == ';') ++buffer;
+        return NULL;
+    }
 
-    
-    return line;
+    // remember the first character that the job starts
+    char* start = buffer;
 
+    while(!(*buffer == '\0' || *buffer == '&' || *buffer == ';')){
+        ++buffer;
+    }
+
+    // Set the job type and terminate the current command
+    if (*buffer == '&') {
+        *job_type = 0;
+        *buffer = '\0';
+        buffer++;  // Move past the null terminator for the next call
+    } else if (*buffer == ';') {
+        *job_type = 1;
+        *buffer = '\0';
+        buffer++;  // Move past the null terminator for the next call
+    } else if (*buffer == '\0') {
+        *job_type = 1;  // foreground job if no specifier
+    }
+
+    return start;
 }
