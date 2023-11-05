@@ -1,4 +1,5 @@
 #include "shell.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -23,9 +24,13 @@ const int MAX_HISTORY = 10;
 * Returns: a msh_t pointer that is allocated and initialized
 */
 msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
+    msh_t* new_shell = (msh_t*) malloc (sizeof(msh_t));
+    // use defualt value if necessary
+    new_shell->max_jobs= ((max_jobs==0)?(MAX_JOBS):(max_jobs));
+    new_shell->max_line= ((max_line==0)?(MAX_LINE):(max_line));
+    new_shell->max_history= ((max_history==0)?(MAX_HISTORY):(max_history));
 
-    // to be implemented
-    return NULL;
+    return new_shell;
 }
 
 
@@ -92,7 +97,7 @@ char *parse_tok(char *line, int *job_type){
 }
 
 
-// code reuse from hw4
+// code reuse from hw4, helper function for separate_args
 int compute_num_args(const char *line){
     const char* i = line;
     int cnt=0;
@@ -118,15 +123,13 @@ char **separate_args(char *line, int *argc, bool *is_builtin){
     char** argv = (char**) malloc (sizeof (char *)*3);
     int start=-1, end=0, cnt=0;
     while(true){
-        if(line[end]!=' '){
+        if(line[end]!=' ' && line[end]!='\0'){
             // the first valid char of this argument
             if(start==-1){
                 start = end;
             }
             ++end;
-        }
-
-        if(line[end]==' ' || line[end]=='\0'){
+        }else{
             // first space after a series of valid chars
             if(start>=0){
                 argv[cnt] = (char *) malloc(sizeof (char )*(end-start+2));
@@ -142,4 +145,28 @@ char **separate_args(char *line, int *argc, bool *is_builtin){
     }
     argv[*argc] = NULL;
     return argv;
+}
+
+int evaluate(msh_t *shell, char *line){
+    // check if the line surpasses the maximum number of characters
+    if(strlen(line)>shell->max_line){
+        printf("error: reached the maximum line limit\n");
+        // assume 1 is an error code
+        return 1;
+    }
+
+    // assume is_builtin_temp is true, this argument will be developed in the future
+    bool is_builtin_temp = true;
+    char **argv;
+    int argc;
+    // parse the line using separate_args
+    argv = separate_args(line, &argc, &is_builtin_temp);
+    //out put the result
+    int i=0;
+    for( ; i<argc; ++i){
+        printf("argv[%d]=%s\n", i, argv[i]);
+    }
+    printf("argc=%d\n", argc);
+    // assume it will always return 0 for now, implement in the following homework
+    return 0;
 }

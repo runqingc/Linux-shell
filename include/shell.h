@@ -8,7 +8,10 @@
 
 // Represents the state of the shell
 typedef struct msh {
-   /** TODO: IMPLEMENT **/
+   /** can add more members if need **/
+   int max_jobs;
+   int max_line;
+   int max_history;
 }msh_t;
 
 
@@ -54,3 +57,14 @@ char *parse_tok(char *line, int *job_type);
 * Note: The user is responsible for freeing the memory return by this function!
 */
 char **separate_args(char *line, int *argc, bool *is_builtin);
+
+/*
+* evaluate - executes the provided command line string
+*
+* shell - the current shell state value
+*
+* line - the command line string to evaluate
+*
+* Returns: non-zero if the command executed wants the shell program to close. Otherwise, a 0 is returned.
+*/
+int evaluate(msh_t *shell, char *line);

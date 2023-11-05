@@ -5,13 +5,16 @@
 
 void test_parse_tok();
 void test_separate_args();
+void test_evaluate();
+
 
 int main(){
     printf("\n\n------------------------\nHere 's msh.c\n");
 
     test_parse_tok();
     test_separate_args();
-    
+    test_evaluate();
+
     return 0;
 }
 
@@ -46,7 +49,22 @@ void test_separate_args(){
     printf("%s",argv[0]); // prints ls
     printf("%s",argv[1]); // prints -la
     printf("%s",argv[2]); // prints  /mpcs51082-aut23
-    //Please note there is an argv[3] that should contain NULL!
+    // note there is an argv[3] that should contain NULL
     printf("%d", argc); // prints 3
     argv = separate_args("",&argc, &is_builtin_temp);  // argv = NULL
+}
+
+void test_evaluate(){
+    printf("\ntest_evaluate: \n");
+    char cmd_line[]="  ls -la   /mpcs51082-aut23 ";
+    printf("evaluate line: %s\n", cmd_line);
+    // allocate a new shell
+    msh_t* shell = alloc_shell(15, 0, 9);
+    evaluate(shell, cmd_line);
+    // should print:
+    // evaluate line:   ls -la   /mpcs51082-aut23 
+    // argv[0]=ls 
+    // argv[1]=-la 
+    // argv[2]=/mpcs51082-aut23 
+    // argc=3
 }
