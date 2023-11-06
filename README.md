@@ -9,7 +9,7 @@ The starter code for the msh shell
 use the following command:
 
 ```sh
-runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ bash scripts/build.sh 
+runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ . scripts/build.sh 
 ```
 
 
@@ -17,7 +17,7 @@ runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ bash scripts/build.sh
 ## Sample test results:
 
 ```sh
-runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ bash scripts/build.sh 
+runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ . scripts/build.sh 
 gcc -o ./bin/msh bin/msh.o bin/shell.o -I./include
 runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ msh
 msh> ls -la .
