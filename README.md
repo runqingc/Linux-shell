@@ -4,13 +4,43 @@ The starter code for the msh shell
 
 
 
-## How to build and run
+## 1. How to build and run
 
-use the following command:
+### 1. 1 Run msh:
+
+use the following command to build:
 
 ```sh
 runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ . scripts/build.sh 
 ```
+
+Then you can start msh. To start default msh, you can simply type ``msh``: 
+```sh
+runqingc@linux7:~/Intro_to_Unix/msh/msh-runqingc$ msh
+```
+
+
+
+### 1. 2 Run tests for parse_tok and separate_args
+
+Navigate to ``./test``, then use the following commands to see the test result of test_parse_tok:
+```sh 
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ cd tests/
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc/tests$ gcc -o test_parse_tok test_parse_tok.c ../src/shell.c -I../include -Wall
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc/tests$ ./test_parse_tok
+```
+
+
+
+Navigate to ``./test``, then use the following commands to see the test result of test_separate_args:
+
+```sh
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ cd tests/
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc/tests$ gcc -o test_separate_args test_separate_args.c ../src/shell.c -I../include -Wall
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc/tests$ ./test_separate_args
+```
+
+
 
 
 
