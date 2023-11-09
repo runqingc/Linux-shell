@@ -8,7 +8,7 @@ The starter code for the msh shell
 
 
 
-### 1. 1 Run tests for parse_tok
+### 1.1 Run tests for parse_tok
 
 Please navigate to ``./test``, then use the following commands to see the test result of test_parse_tok:
 ```sh 
@@ -19,7 +19,7 @@ runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc/tests$ ./test_parse_tok
 
 
 
-###1. 2 Run tests for separate_args
+### 1.2 Run tests for separate_args
 
 Please navigate to ``./test``, then use the following commands to see the test result of test_separate_args:
 
