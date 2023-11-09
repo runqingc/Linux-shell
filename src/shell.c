@@ -38,6 +38,9 @@ char *parse_tok(char *line, int *job_type){
         return NULL;
     }
 
+    // remember the first character that the job starts
+    char* start = buffer;
+
     // skip leading spaces
     while (*buffer == ' ') {
         buffer++;
@@ -51,8 +54,7 @@ char *parse_tok(char *line, int *job_type){
         return NULL;
     }
 
-    // remember the first character that the job starts
-    char* start = buffer;
+    
 
     while(!(*buffer == '\0' || *buffer == '&' || *buffer == ';')){
         ++buffer;
@@ -98,7 +100,10 @@ int compute_num_args(const char *line){
 char **separate_args(char *line, int *argc, bool *is_builtin){
 
     *argc = compute_num_args(line);
-    
+
+    // if there's no valid argument
+    if(*argc==0) return NULL;
+
     char** argv = (char**) malloc (sizeof (char *)*(*argc+1));
     int start=-1, end=0, cnt=0;
     while(true){
@@ -111,9 +116,9 @@ char **separate_args(char *line, int *argc, bool *is_builtin){
         }else{
             // first space after a series of valid chars
             if(start>=0){
-                argv[cnt] = (char *) malloc(sizeof (char )*(end-start+2));
-                memcpy(argv[cnt], line+start, end-start+1);
-                argv[cnt][end-start+1] = '\0';
+                argv[cnt] = (char *) malloc(sizeof (char )*(end-start+1));
+                memcpy(argv[cnt], line+start, end-start);
+                argv[cnt][end-start] = '\0';
                 ++cnt;
                 start = -1;
             }

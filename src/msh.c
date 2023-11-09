@@ -76,9 +76,11 @@ int main(int argc, char *argv[]){
             int type;
             char *cur_job;
             cur_job = parse_tok(cmd_line, &type);
+            // printf("cur_job=%s\n", cur_job);
             evaluate(shell, cur_job);
             do{
                 cur_job = parse_tok(NULL, &type);
+                // printf("cur_job=%s\n", cur_job);
                 evaluate(shell, cur_job);
             }while(cur_job);
             
