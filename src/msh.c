@@ -61,6 +61,13 @@ int main(int argc, char *argv[]){
 
     // run shell
     printf("msh> ");
+
+    // read from file
+    
+    
+
+
+    // read from command line
     char *cmd_line = NULL;
     long int len = 0;
     long nRead = getline(&cmd_line, &len, stdin);
