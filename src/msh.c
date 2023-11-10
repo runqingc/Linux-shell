@@ -73,6 +73,7 @@ int main(int argc, char *argv[]){
         if(strcmp(cmd_line, EXIT)==0){
             if(cmd_line) free(cmd_line);
             cmd_line = NULL;
+            exit_shell(shell);
             break;
         }else{
             // parse, then evaluate each job
