@@ -14,7 +14,7 @@ const int MAX_HISTORY = 10;
 
 msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
     msh_t* new_shell = (msh_t*) malloc (sizeof(msh_t));
-    // use defualt value if necessary
+    // use default value if necessary
     new_shell->max_jobs= ((max_jobs==0)?(MAX_JOBS):(max_jobs));
     new_shell->max_line= ((max_line==0)?(MAX_LINE):(max_line));
     new_shell->max_history= ((max_history==0)?(MAX_HISTORY):(max_history));
