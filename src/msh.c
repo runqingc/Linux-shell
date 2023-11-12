@@ -25,32 +25,32 @@ int main(int argc, char *argv[]){
     int line=0, history=0, job=0;
 
     while((opt = getopt(argc, argv, "j:s:l:")) != -1){
-
+            
         switch (opt) {
 
             case 'l':
                 result = sscanf(optarg, "%d", &line);
                 if(result!=1 || line<=0){
-                    printf("usage: msg [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
+                    printf("usage: msh [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
                     return 0;
                 }
                 break;
             case 's':
                 result = sscanf(optarg, "%d", &history);
                 if(result!=1 || history<=0){
-                    printf("usage: msg [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
+                    printf("usage: msh [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
                     return 0;
                 }
                 break;
             case 'j':
                 result = sscanf(optarg, "%d", &job);
                 if(result!=1 || job<=0){
-                    printf("usage: msg [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
+                    printf("usage: msh [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
                     return 0;
                 }
                 break;
             default:
-                printf("usage: msg [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
+                printf("usage: msh [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
                 return 0;
         }
 
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]){
     printf("msh> ");
 
 
-    // read from command line
+    // read from command line   
     char *cmd_line = NULL;
     long int len = 0;
     long nRead = getline(&cmd_line, &len, stdin);

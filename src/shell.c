@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "job.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -18,7 +19,13 @@ msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
     new_shell->max_jobs= ((max_jobs==0)?(MAX_JOBS):(max_jobs));
     new_shell->max_line= ((max_line==0)?(MAX_LINE):(max_line));
     new_shell->max_history= ((max_history==0)?(MAX_HISTORY):(max_history));
-
+    // allocate job pool and initialize all the positions to be null
+    new_shell->jobs = (job_t**) malloc (sizeof(job_t*)*new_shell->max_jobs);
+    if (new_shell->jobs != NULL) {
+        for (int i = 0; i < new_shell->max_jobs; i++) {
+            new_shell->jobs[i] = NULL;
+        }
+    }
     return new_shell;
 }
 
@@ -163,6 +170,7 @@ int evaluate(msh_t *shell, char *line){
 
 void exit_shell(msh_t *shell){
     if(shell){
+        if(shell->jobs) free_jobs(shell->jobs, shell->max_jobs);
         free(shell);
         shell = NULL;
     }

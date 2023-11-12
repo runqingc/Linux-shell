@@ -3,15 +3,18 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include "job.h"
+
 
 #endif
 
 // Represents the state of the shell
 typedef struct msh {
    /** can add more members if need **/
-   int max_jobs;
-   int max_line;
-   int max_history;
+   int max_jobs;  // The maximum number of jobs that can be in existence at any point in time.
+   int max_line;  // The maximum number of characters that can be entered for any specific command line.
+   int max_history;  // The maximum number of saved history commands for the shell.
+   job_t **jobs;   // Represent an array jobs that are running in the shell, store all the POINTERS of each job.
 }msh_t;
 
 
