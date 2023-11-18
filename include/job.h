@@ -15,7 +15,7 @@ typedef struct job {
     char *cmd_line;     // The command line for this specific job.
     job_state_t state;  // The current state for this job
     pid_t pid;          // The process id for this job
-    int jid;            // The job number for this job
+    int jid;            // The job number for this job in the job array
 }job_t;
 
 #endif
@@ -64,3 +64,5 @@ bool delete_job(job_t **jobs, int max_jobs, pid_t pid);
  * max_jobs: the max number of jobs that the array can hold
  * */
 void free_jobs(job_t **jobs, int max_jobs);
+
+bool check_free_pos(job_t **jobs, int max_jobs);

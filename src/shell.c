@@ -5,12 +5,14 @@
 #include <stdbool.h>
 #include <string.h>
 
-
 // If any of these parameters are equal to 0 in alloc_shell
 // then I will use the following default values for the corresponding limits:
 const int MAX_LINE = 1024;
 const int MAX_JOBS = 16;
 const int MAX_HISTORY = 10;
+
+extern char **environ;
+
 
 
 msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
@@ -34,7 +36,7 @@ char *parse_tok(char *line, int *job_type){
 
     // static point reuse as means to return back the portions of the string
     static char* buffer;
-    
+
     if(line){
         buffer = line;
     }
@@ -60,8 +62,6 @@ char *parse_tok(char *line, int *job_type){
         if(*buffer == '&' || *buffer == ';') ++buffer;
         return NULL;
     }
-
-    
 
     while(!(*buffer == '\0' || *buffer == '&' || *buffer == ';')){
         ++buffer;
@@ -138,13 +138,12 @@ char **separate_args(char *line, int *argc, bool *is_builtin){
     return argv;
 }
 
-int evaluate(msh_t *shell, char *line){
+int evaluate(msh_t *shell, char *line, int job_type){
     if(!line) return 0;
     // check if the line surpasses the maximum number of characters
     if(strlen(line)>shell->max_line){
         printf("error: reached the maximum line limit\n");
-        // assume 1 is an error code
-        return 1;
+        return 0;
     }
     // assume is_builtin_temp is true, this argument will be developed in the future
     bool is_builtin_temp = true;
@@ -152,19 +151,97 @@ int evaluate(msh_t *shell, char *line){
     int argc;
     // parse the line using separate_args
     argv = separate_args(line, &argc, &is_builtin_temp);
-    
+
     if(argc==0){
         return 0;
     }
 
+    // check if it needs to exit
+    if(argc==1 && strcmp("exit", argv[0])==0){
+        free(line);
+        line = NULL;
+        exit_shell(shell);
+        return 1;
+    }
+
     //out put the result
     int i=0;
-    for( ; i<argc; ++i){
-        printf("argv[%d]=%s\n", i, argv[i]);
+    // for( ; i<argc; ++i){
+    //     printf("argv[%d]=%s\n", i, argv[i]);
+    // }
+    // printf("argc=%d\n", argc);
+
+
+    // 5 steps to execute the line
+
+    // [ask TA] force check? what if the child process gets executed first, will it
+    // escape the checking in parent?
+
+    // 0. check if there's any free space in job array
+    if(!check_free_pos(shell->jobs, shell->max_jobs)){
+        printf("The job array is full. Unable to add new jobs.\n");
+        return 0;
     }
-    printf("argc=%d\n", argc);
-    // assume it will always return 0 for now, implement in the following homework
-    
+
+    int child_status;
+    pid_t pid = fork();
+
+    // Handle fork() error
+    if (pid == -1) {
+        perror("fork failed");
+        return 0;
+    }
+
+    // 1. Create a new child process using fork()
+    if (pid  == 0){
+        // child running
+        // 3. The child process will then call execve(...) to execute the job.
+        if (execve(argv[0], argv, environ) < 0) {
+            printf("%s: Command not found.\n", argv[0]);
+            exit(1);
+        }
+
+    }else{
+        // parent running
+        // 2. Have the parent add the newly created job to the jobs array
+        add_job(shell->jobs, shell->max_jobs, pid, job_type, line);
+
+        // 4. The parent process will block using waitpid, until the child process end
+        if(job_type == FOREGROUND){
+            pid_t wpid = waitpid(pid, &child_status, 0);
+
+            if (WIFEXITED(child_status)){
+                // 5. the child process terminates, the parent process must delete the job from the jobs array.
+                delete_job(shell->jobs, shell->max_jobs, pid);
+            }else{
+                printf("Child %d terminate abnormally\n", wpid);
+                // [ask TA] is there any ca the case that the child does not end normally?
+                // should I delete the child then?
+            }
+        }else if(job_type==BACKGROUND){
+            pid_t term_pid = waitpid (pid, &child_status, WNOHANG);
+
+            // not sure whether I should do sth here
+
+        }
+    }
+
+    // [ask TA] should I move this to the front of evaluate function?
+    // Since evaluate function has multiple exits
+
+    // reaps any completed background jobs
+    // traverse the shell job array, if it is a background job, check if it has completed
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index] && shell->jobs[index]->state==BACKGROUND){
+            pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, WNOHANG);
+            if (term_pid > 0) {
+                // The job has completed
+                delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
+            }
+        }
+    }
+
     return 0;
 }
 

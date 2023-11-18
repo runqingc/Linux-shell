@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+
+
+
 const char* EXIT = "exit";
 
 void test_parse_tok();
@@ -25,7 +28,7 @@ int main(int argc, char *argv[]){
     int line=0, history=0, job=0;
 
     while((opt = getopt(argc, argv, "j:s:l:")) != -1){
-            
+
         switch (opt) {
 
             case 'l':
@@ -56,47 +59,48 @@ int main(int argc, char *argv[]){
 
     }
 
-    // if passes check, allocate a new shell
-    msh_t* shell = alloc_shell(job, line, history);
-
-    // run shell
-    printf("msh> ");
-
-
-    // read from command line   
-    char *cmd_line = NULL;
-    long int len = 0;
-    long nRead = getline(&cmd_line, &len, stdin);
-    // replace the '\n' to '\0'
-    cmd_line[strcspn(cmd_line, "\n")] = '\0';
-    while ( nRead != -1) {
-        if(strcmp(cmd_line, EXIT)==0){
-            if(cmd_line) free(cmd_line);
-            cmd_line = NULL;
-            exit_shell(shell);
-            break;
-        }else{
-            // parse, then evaluate each job
-            int type;
-            char *cur_job;
-            cur_job = parse_tok(cmd_line, &type);
-            evaluate(shell, cur_job);
-            do{
-                cur_job = parse_tok(NULL, &type);
-                evaluate(shell, cur_job);
-            }while(cur_job);
-            
-        }
-        printf("msh> ");
-        // Done using line so I must free it!!
-        if(cmd_line) free(cmd_line);
-        //Make sure to reset line back to null for the next line
-        cmd_line = NULL;
-        nRead = getline(&cmd_line, &len, stdin);
-        cmd_line[strcspn(cmd_line, "\n")] = '\0';
+    // After the while loop with getopt
+    if (optind < argc) {
+        // Non-option arguments found
+        printf("usage: msh [-s NUMBER] [-j NUMBER] [-l NUMBER]\n");
+        return 0;
     }
 
 
+    // if passes check, allocate a new shell
+    msh_t* shell = alloc_shell(job, line, history);
+
+    // read from command line
+    char *cmd_line = NULL;
+    size_t len = 0;
+    ssize_t nRead;
+    // run shell
+    while (printf("msh> "), (nRead = getline(&cmd_line, &len, stdin)) != -1) {
+        // Replace the '\n' with '\0'
+        cmd_line[strcspn(cmd_line, "\n")] = '\0';
+
+        int type;
+        int is_exit = 0;
+        char *cur_job = parse_tok(cmd_line, &type);
+
+        // Process the first token and check for exit condition
+        is_exit = evaluate(shell, cur_job, type);
+        if (is_exit) {
+            break;
+        }
+
+        // Process subsequent tokens if any
+        while ((cur_job = parse_tok(NULL, &type)) && !(is_exit = evaluate(shell, cur_job, type)));
+
+        // Check for exit condition again
+        if (is_exit) {
+            break;
+        }
+
+        // Free the command line buffer at the end of each loop iteration
+        free(cmd_line);
+        cmd_line = NULL;
+    }
 
     return 0;
 }
@@ -143,11 +147,11 @@ void test_evaluate(){
     printf("evaluate line: %s\n", cmd_line);
     // allocate a new shell
     msh_t* shell = alloc_shell(15, 0, 9);
-    evaluate(shell, cmd_line);
+    evaluate(shell, cmd_line, 0);
     // should print:
-    // evaluate line:   ls -la   /mpcs51082-aut23 
-    // argv[0]=ls 
-    // argv[1]=-la 
-    // argv[2]=/mpcs51082-aut23 
+    // evaluate line:   ls -la   /mpcs51082-aut23
+    // argv[0]=ls
+    // argv[1]=-la
+    // argv[2]=/mpcs51082-aut23
     // argc=3
 }

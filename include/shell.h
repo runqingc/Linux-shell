@@ -10,11 +10,11 @@
 
 // Represents the state of the shell
 typedef struct msh {
-   /** can add more members if need **/
-   int max_jobs;  // The maximum number of jobs that can be in existence at any point in time.
-   int max_line;  // The maximum number of characters that can be entered for any specific command line.
-   int max_history;  // The maximum number of saved history commands for the shell.
-   job_t **jobs;   // Represent an array jobs that are running in the shell, store all the POINTERS of each job.
+    /** can add more members if need **/
+    int max_jobs;  // The maximum number of jobs that can be in existence at any point in time.
+    int max_line;  // The maximum number of characters that can be entered for any specific command line.
+    int max_history;  // The maximum number of saved history commands for the shell.
+    job_t **jobs;   // Represent an array jobs that are running in the shell, store all the POINTERS of each job.
 }msh_t;
 
 
@@ -70,7 +70,7 @@ char **separate_args(char *line, int *argc, bool *is_builtin);
 *
 * Returns: non-zero if the command executed wants the shell program to close. Otherwise, a 0 is returned.
 */
-int evaluate(msh_t *shell, char *line);
+int evaluate(msh_t *shell, char *line, int job_type);
 
 
 /*

@@ -77,3 +77,17 @@ void free_jobs(job_t **jobs, int max_jobs){
         free(jobs);
     }
 }
+
+
+bool check_free_pos(job_t **jobs, int max_jobs){
+    if(jobs){
+        int index = 0;
+        for( ; index<max_jobs; ++index){
+            if(jobs[index]==NULL){
+                return true;
+            }
+
+        }
+    }
+    return false;
+}
