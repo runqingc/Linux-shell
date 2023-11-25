@@ -221,8 +221,11 @@ int evaluate(msh_t *shell, char *line, int job_type){
         }else if(job_type==BACKGROUND){
             pid_t term_pid = waitpid (pid, &child_status, WNOHANG);
 
-            // not sure whether I should do sth here
-
+            // not sure whether I should do sth here, can I delete the completed job here?
+            if (term_pid > 0) {
+                // The job has completed
+                delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
+            }
         }
     }
 
