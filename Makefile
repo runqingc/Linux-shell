@@ -2,8 +2,8 @@ CC=gcc
 CFLAGS=-I./include
 SRC_DIR=./src
 OBJ_DIR=./bin
-DEPS=./include/job.h ./include/shell.h
-_OBJ = msh.o job.o shell.o
+DEPS=./include/job.h ./include/shell.h ./include/history.h ./include/signal_handlers.h
+_OBJ = msh.o job.o shell.o history.o signal_handlers.o
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 EXECUTABLE=msh
 

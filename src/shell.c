@@ -1,5 +1,7 @@
 #include "shell.h"
 #include "job.h"
+#include "history.h"
+#include "signal_handlers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
