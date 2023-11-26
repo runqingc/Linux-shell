@@ -91,7 +91,7 @@ char *find_line_history(history_t *history, int index){
 }
 
 void free_history(history_t *history){
-    FILE *file = fopen("./.msh_history", "w");
+    FILE *file = fopen(HISTORY_FILE_PATH, "w");
     if (file == NULL) {
         perror("Error opening file");
         return;
