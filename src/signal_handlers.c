@@ -17,8 +17,23 @@
 */
 void sigchld_handler(int sig)
 {
+    int olderrno = errno;
+    sigset_t mask_all, prev_all;
+    pid_t pid;
 
+    int status;
 
+    sigfillset(&mask_all);
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) { 
+        sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+
+        // Perform the updating of the job list
+        
+
+        sigprocmask(SIG_SETMASK, &prev_all, NULL);
+    }    
+
+    errno = olderrno;
 }
 
 /*

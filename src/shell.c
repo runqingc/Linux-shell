@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 // If any of these parameters are equal to 0 in alloc_shell
 // then I will use the following default values for the corresponding limits:
@@ -30,6 +32,10 @@ msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
             new_shell->jobs[i] = NULL;
         }
     }
+
+    // setup the signal handlers
+    initialize_signal_handlers();
+
     return new_shell;
 }
 
@@ -183,6 +189,8 @@ int evaluate(msh_t *shell, char *line, int job_type){
         return 0;
     }
 
+    
+
     int child_status;
     pid_t pid = fork();
 
@@ -218,12 +226,13 @@ int evaluate(msh_t *shell, char *line, int job_type){
                 // [ask TA] is there any ca the case that the child does not end normally?
                 // should I delete the child then?
             }
-        }else if(job_type==BACKGROUND){
-            pid_t term_pid = waitpid (pid, &child_status, WNOHANG);
-
-            // not sure whether I should do sth here, can I delete the completed job here?
-            
         }
+        // else if(job_type==BACKGROUND){
+        //     pid_t term_pid = waitpid (pid, &child_status, WNOHANG);
+
+        //     // not sure whether I should do sth here, can I delete the completed job here?
+            
+        // }
     }
 
     // [ask TA] should I move this to the front of evaluate function?
@@ -247,6 +256,21 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
 void exit_shell(msh_t *shell){
     if(shell){
+        // reaps any completed background jobs
+        // traverse the shell job array, if it is a background job, check if it has completed
+        int index = 0;
+        int child_status;
+        for( ; index<shell->max_jobs; ++index){
+            if(shell->jobs[index] && shell->jobs[index]->state==BACKGROUND){
+                pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, 0);
+                if (term_pid > 0) {
+                    // The job has completed
+                    delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
+                }
+            }
+        }
+
+
         if(shell->jobs) free_jobs(shell->jobs, shell->max_jobs);
         free(shell);
         shell = NULL;
