@@ -14,6 +14,7 @@ void test_parse_tok();
 void test_separate_args();
 void test_evaluate();
 
+msh_t* shell = NULL;
 
 
 
@@ -68,7 +69,7 @@ int main(int argc, char *argv[]){
 
 
     // if passes check, allocate a new shell
-    msh_t* shell = alloc_shell(job, line, history);
+    shell = alloc_shell(job, line, history);
 
     // read from command line
     char *cmd_line = NULL;

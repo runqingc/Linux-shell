@@ -8,6 +8,7 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 // If any of these parameters are equal to 0 in alloc_shell
 // then I will use the following default values for the corresponding limits:
@@ -189,7 +190,12 @@ int evaluate(msh_t *shell, char *line, int job_type){
         return 0;
     }
 
-    
+    sigset_t mask_all, mask_one, prev_one;
+    sigfillset(&mask_all);
+    sigemptyset(&mask_one);
+    sigaddset(&mask_one, SIGCHLD);
+    /* Block SIGCHLD before I fork*/
+    sigprocmask(SIG_BLOCK, &mask_one, &prev_one); 
 
     int child_status;
     pid_t pid = fork();
@@ -211,28 +217,33 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
     }else{
         // parent running
+        
+        // block all signal, so that I will not be interrupted when I am 
+        // adding the job to job list
+        sigprocmask(SIG_BLOCK, &mask_all, NULL);
+
         // 2. Have the parent add the newly created job to the jobs array
         add_job(shell->jobs, shell->max_jobs, pid, job_type, line);
 
+        // UNBLOCK ALL
+        sigprocmask(SIG_SETMASK, &prev_one, NULL);
+
         // 4. The parent process will block using waitpid, until the child process end
         if(job_type == FOREGROUND){
-            pid_t wpid = waitpid(pid, &child_status, 0);
 
-            if (WIFEXITED(child_status)){
-                // 5. the child process terminates, the parent process must delete the job from the jobs array.
-                delete_job(shell->jobs, shell->max_jobs, pid);
-            }else{
-                printf("Child %d terminate abnormally\n", wpid);
-                // [ask TA] is there any ca the case that the child does not end normally?
-                // should I delete the child then?
-            }
+            waitfg();
+            // old implementation: use waitpid:
+            // pid_t wpid = waitpid(pid, &child_status, 0);
+
+            // if (WIFEXITED(child_status)){
+            //     // 5. the child process terminates, the parent process must delete the job from the jobs array.
+            //     delete_job(shell->jobs, shell->max_jobs, pid);
+            // }else{
+            //     printf("Child %d terminate abnormally\n", wpid);
+            //     // [ask TA] is there any ca the case that the child does not end normally?
+            //     // should I delete the child then?
+            // }
         }
-        // else if(job_type==BACKGROUND){
-        //     pid_t term_pid = waitpid (pid, &child_status, WNOHANG);
-
-        //     // not sure whether I should do sth here, can I delete the completed job here?
-            
-        // }
     }
 
     // [ask TA] should I move this to the front of evaluate function?
@@ -274,5 +285,14 @@ void exit_shell(msh_t *shell){
         if(shell->jobs) free_jobs(shell->jobs, shell->max_jobs);
         free(shell);
         shell = NULL;
+    }
+}
+
+
+void waitfg(){
+    while(1){
+        sleep(1);
+        // [ask TA] should I loop over the job list to see if the foreground job was deleted? 
+        // if the specific freground job deleted, then break
     }
 }

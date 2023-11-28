@@ -1,4 +1,6 @@
 #include "signal_handlers.h"
+#include "job.h"
+#include "shell.h"
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
@@ -6,6 +8,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/wait.h>
+
+// gloable variable
+// the shell I used in main
+extern msh_t* shell;
 
 /*
 * sigchld_handler - The kernel sends a SIGCHLD to the shell whenever
@@ -20,19 +27,18 @@ void sigchld_handler(int sig)
     int olderrno = errno;
     sigset_t mask_all, prev_all;
     pid_t pid;
-
-    int status;
-
     sigfillset(&mask_all);
-    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) { 
+    while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) { /* Reap child */
         sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
-
-        // Perform the updating of the job list
+        /* Delete the child from the job list */
+        delete_job(shell->jobs, shell->max_jobs, pid);
         
-
         sigprocmask(SIG_SETMASK, &prev_all, NULL);
-    }    
-
+    }
+    if (errno != ECHILD){
+        // is this error function correct? "waitpid error"
+        strerror(1);
+    }
     errno = olderrno;
 }
 
@@ -44,7 +50,17 @@ void sigchld_handler(int sig)
 */
 void sigint_handler(int sig)
 {
-
+    
+    // loops the job array to find the pid of foreground job
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index] && shell->jobs[index]->state==FOREGROUND){
+            if (shell->jobs[index]->pid != 0) {
+                // Send the SIGINT signal to the foreground process group
+                kill(-shell->jobs[index]->pid, SIGINT);
+            }
+        }
+    }
 
 }
 
@@ -56,7 +72,16 @@ void sigint_handler(int sig)
 */
 void sigtstp_handler(int sig)
 {
-
+    // loops the job array to find the pid of foreground job
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index] && shell->jobs[index]->state==FOREGROUND){
+            if (shell->jobs[index]->pid != 0) {
+                // Send the SIGINT signal to the foreground process group
+                kill(-shell->jobs[index]->pid, SIGTSTP);
+            }
+        }
+    }
 
 }
 
