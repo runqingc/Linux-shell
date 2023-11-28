@@ -20,6 +20,27 @@ extern char **environ;
 
 
 
+// check if a given pid appears in the shell's job list
+bool check_pid(pid_t pid, msh_t *shell){
+    if(!shell) return false;
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index] && shell->jobs[index]->pid==pid){
+           return true;
+        }
+    }
+    return false;
+}
+
+void waitfg(pid_t pid, msh_t *shell){
+    while(1){
+        sleep(1);
+        // [ask TA] should I loop over the job list to see if the foreground job was deleted? 
+        // if the specific freground job deleted, then break
+        if(!check_pid(pid, shell)) break;
+    }
+}
+
 msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
     msh_t* new_shell = (msh_t*) malloc (sizeof(msh_t));
     // use default value if necessary
@@ -231,7 +252,7 @@ int evaluate(msh_t *shell, char *line, int job_type){
         // 4. The parent process will block using waitpid, until the child process end
         if(job_type == FOREGROUND){
 
-            waitfg();
+            waitfg(pid, shell);
             // old implementation: use waitpid:
             // pid_t wpid = waitpid(pid, &child_status, 0);
 
@@ -289,10 +310,3 @@ void exit_shell(msh_t *shell){
 }
 
 
-void waitfg(){
-    while(1){
-        sleep(1);
-        // [ask TA] should I loop over the job list to see if the foreground job was deleted? 
-        // if the specific freground job deleted, then break
-    }
-}

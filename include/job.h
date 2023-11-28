@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
-typedef enum job_state{FOREGROUND, BACKGROUND, SUSPENDED, UNDEFINED} job_state_t;
+typedef enum job_state{BACKGROUND, FOREGROUND, SUSPENDED, UNDEFINED} job_state_t;
 
 // Represents a job in a shell.
 typedef struct job {
