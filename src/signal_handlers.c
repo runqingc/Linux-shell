@@ -28,12 +28,15 @@ void sigchld_handler(int sig)
     sigset_t mask_all, prev_all;
     pid_t pid;
     sigfillset(&mask_all);
-    while ((pid = waitpid(-1, NULL, WNOHANG | WUNTRACED)) > 0) { /* Reap child */
+    int status;
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) { /* Reap child */
         // printf("in sigchld_handler: pid=%d\n", pid);
         sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
-        /* Delete the child from the job list */
-        delete_job(shell->jobs, shell->max_jobs, pid);
-        
+        /* Delete the child from the job list if it has terminated*/
+        if (WIFEXITED(status) || WIFSIGNALED(status)){
+            delete_job(shell->jobs, shell->max_jobs, pid);
+            // printf("in sigchld_handler deleted: pid=%d\n", pid);
+        }
         sigprocmask(SIG_SETMASK, &prev_all, NULL);
     }
     if (errno != ECHILD){
@@ -57,8 +60,10 @@ void sigint_handler(int sig)
     for( ; index<shell->max_jobs; ++index){
         if(shell->jobs[index] && shell->jobs[index]->state==FOREGROUND){
             if (shell->jobs[index]->pid != 0) {
+                // printf("in sigint_handler: stoped a job pid=%d\n", shell->jobs[index]->pid);
                 // Send the SIGINT signal to the foreground process group
                 kill(-shell->jobs[index]->pid, SIGINT);
+                
             }
         }
     }
@@ -72,18 +77,28 @@ void sigint_handler(int sig)
 * Citation: Bryant and O’Hallaron, Computer Systems: A Programmer’s Perspective, Third Edition
 */
 void sigtstp_handler(int sig)
-{
+{   
+    // block SIGCHLD so that shell->jobs[index]->state = SUSPENDED; will be executed first
+    sigset_t mask_one, prev_one;
+    sigemptyset(&mask_one);
+    sigaddset(&mask_one, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &mask_one, &prev_one); 
     // loops the job array to find the pid of foreground job
     int index = 0;
     for( ; index<shell->max_jobs; ++index){
         if(shell->jobs[index] && shell->jobs[index]->state==FOREGROUND){
             if (shell->jobs[index]->pid != 0) {
+                // printf("in sigtstp_handler: suspended a job pid=%d\n", shell->jobs[index]->pid);
+                // update the state of foreground job to SUSPEND
+                shell->jobs[index]->state = SUSPENDED;
                 // Send the SIGINT signal to the foreground process group
                 kill(-shell->jobs[index]->pid, SIGTSTP);
+                // printf("in sigtstp_handler: 02 suspended a job pid=%d, index=%d\n", shell->jobs[index]->pid, index);
             }
         }
     }
-
+    // UNBLOCK ALL
+    sigprocmask(SIG_SETMASK, &prev_one, NULL);
 }
 
 /*

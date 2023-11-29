@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *HISTORY_FILE_PATH = "../data/.msh_history";
+const char *HISTORY_FILE_PATH = "./data/.msh_history";
 
 history_t *alloc_history(int max_history){
 
@@ -20,6 +20,7 @@ history_t *alloc_history(int max_history){
     // open file to load history
     FILE *fp = fopen(HISTORY_FILE_PATH, "r");
     if (fp != NULL){
+        // printf("in alloc_history: find a history file\n");
 
         char *line = NULL;
         long int len = 0;
@@ -39,6 +40,9 @@ history_t *alloc_history(int max_history){
         }
         fclose(fp);
     }
+    // else{
+    //     printf("in alloc_history: open history file failed\n");
+    // }
 
     return new_history_t;
 }
@@ -53,7 +57,7 @@ void add_line_history(history_t *history, const char *cmd_line){
     // here, empty = not null
     // can filter those have no valid character here if future implementation need
     if(cmd_line==NULL) return;
-
+    // printf("in add_line_history: next=%d\n", history->next);
     // check if the history has reached max
     if(history->next==history->max_history){
         // shift the elements over by one
@@ -69,13 +73,15 @@ void add_line_history(history_t *history, const char *cmd_line){
         }
         --history->next;
     }
+    // printf("in add_line_history: next=%d\n", history->next);
     history->lines[history->next] = (char *) malloc(strlen(cmd_line) + 1);
     strcpy(history->lines[history->next], cmd_line);
     history->next++;
-
+    // printf("in add_line_history: %d %s\n", history->next-1, history->lines[history->next-1]);
 }
 
 void print_history(history_t *history) {
+    // printf("in print_history: \n");
     for(int i = 1; i <= history->next; i++) {
         printf("%5d\t%s\n",i,history->lines[i-1]);
     }

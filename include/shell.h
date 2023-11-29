@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "job.h"
+#include "history.h"
 
 
 #endif
@@ -15,6 +16,7 @@ typedef struct msh {
     int max_line;  // The maximum number of characters that can be entered for any specific command line.
     int max_history;  // The maximum number of saved history commands for the shell.
     job_t **jobs;   // Represent an array jobs that are running in the shell, store all the POINTERS of each job.
+    history_t *histories;
 }msh_t;
 
 

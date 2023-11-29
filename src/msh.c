@@ -77,8 +77,13 @@ int main(int argc, char *argv[]){
     ssize_t nRead;
     // run shell
     while (printf("msh> "), (nRead = getline(&cmd_line, &len, stdin)) != -1) {
+        
+        
         // Replace the '\n' with '\0'
         cmd_line[strcspn(cmd_line, "\n")] = '\0';
+
+        // add history here
+        add_line_history(shell->histories, cmd_line);
 
         int type;
         int is_exit = 0;
@@ -89,6 +94,11 @@ int main(int argc, char *argv[]){
         if (is_exit) {
             break;
         }
+
+        // printf("in msh : %s\n", cmd_line);
+
+        
+
 
         // Process subsequent tokens if any
         while ((cur_job = parse_tok(NULL, &type)) && !(is_exit = evaluate(shell, cur_job, type)));

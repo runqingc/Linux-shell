@@ -20,16 +20,22 @@ extern char **environ;
 
 
 
-// helper function to check if a given pid appears in the shell's job list
-bool check_pid(pid_t pid, msh_t *shell){
+// helper function to check if waitfg can break
+// 2 situation can break: get deleted from jobs array; suspended
+bool check_pid_finish(pid_t pid, msh_t *shell){
     if(!shell) return false;
     int index = 0;
     for( ; index<shell->max_jobs; ++index){
         if(shell->jobs[index] && shell->jobs[index]->pid==pid){
-           return true;
+           if(shell->jobs[index]->state==SUSPENDED){
+            return true;
+           }else{
+            return false;
+           }
         }
     }
-    return false;
+    // not find, indicate this pid was deleted
+    return true;
 }
 
 
@@ -38,8 +44,8 @@ void waitfg(pid_t pid, msh_t *shell){
     while(1){
         sleep(1);
         // [ask TA] should I loop over the job list to see if the foreground job was deleted? 
-        // if the specific freground job deleted, then break
-        if(!check_pid(pid, shell)) break;
+        // if the specific freground job deleted or suspended, then break
+        if(check_pid_finish(pid, shell)) break;
     }
 }
 
@@ -52,6 +58,8 @@ bool check_is_builtin(char **argv, int argc){
     // case 1: jobs
     if(argc==1 && strcmp(argv[0], "jobs")==0){
         return true;
+    }else if(argc==1 && strcmp(argv[0], "history")==0){
+        return true;
     }
 
     return false;
@@ -62,6 +70,7 @@ char *builtin_cmd(msh_t *shell, char **argv){
 
     // case 1: jobs
     if(strcmp(argv[0], "jobs")==0){
+        // printf("in builtin_cmd: jobs\n");
         int index = 0;
         for( ; index<shell->max_jobs; ++index){
             if(shell->jobs[index]){
@@ -73,6 +82,9 @@ char *builtin_cmd(msh_t *shell, char **argv){
                 );
             }
         }
+    }else if(strcmp(argv[0], "history")==0){
+        // printf("in builtin_cmd: history\n");
+        print_history(shell->histories);
     }
 
 }
@@ -94,6 +106,8 @@ msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
             new_shell->jobs[i] = NULL;
         }
     }
+    // load histories
+    new_shell->histories = alloc_history(new_shell->max_history);
 
     // setup the signal handlers
     initialize_signal_handlers();
@@ -313,22 +327,14 @@ int evaluate(msh_t *shell, char *line, int job_type){
         // UNBLOCK ALL
         sigprocmask(SIG_SETMASK, &prev_one, NULL);
 
+
         // 4. The parent process will block using waitpid, until the child process end
         if(job_type == FOREGROUND){
 
             waitfg(pid, shell);
-            // old implementation: use waitpid:
-            // pid_t wpid = waitpid(pid, &child_status, 0);
-
-            // if (WIFEXITED(child_status)){
-            //     // 5. the child process terminates, the parent process must delete the job from the jobs array.
-            //     delete_job(shell->jobs, shell->max_jobs, pid);
-            // }else{
-            //     printf("Child %d terminate abnormally\n", wpid);
-            //     // [ask TA] is there any ca the case that the child does not end normally?
-            //     // should I delete the child then?
-            // }
+            
         }
+        
     }
 
     // [ask TA] should I move this to the front of evaluate function?
@@ -369,6 +375,7 @@ void exit_shell(msh_t *shell){
 
 
         if(shell->jobs) free_jobs(shell->jobs, shell->max_jobs);
+        free_history(shell->histories);
         free(shell);
         shell = NULL;
     }
