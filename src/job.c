@@ -52,9 +52,11 @@ bool delete_job(job_t **jobs, int max_jobs, pid_t pid){
     int index = 0;
     for( ; index<max_jobs; ++index){
         if(jobs[index] && jobs[index]->pid==pid){
+            
             if(jobs[index]->cmd_line) free(jobs[index]->cmd_line);
             free(jobs[index]);
             jobs[index] = NULL;
+            // printf("in delete_job: deleted pid = %d\n", pid);
             // successfully deleted a job
             return true;
         }

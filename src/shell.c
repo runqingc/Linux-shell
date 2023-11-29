@@ -20,7 +20,7 @@ extern char **environ;
 
 
 
-// check if a given pid appears in the shell's job list
+// helper function to check if a given pid appears in the shell's job list
 bool check_pid(pid_t pid, msh_t *shell){
     if(!shell) return false;
     int index = 0;
@@ -32,6 +32,8 @@ bool check_pid(pid_t pid, msh_t *shell){
     return false;
 }
 
+
+// helper function to wait foreground job to finish
 void waitfg(pid_t pid, msh_t *shell){
     while(1){
         sleep(1);
@@ -40,6 +42,44 @@ void waitfg(pid_t pid, msh_t *shell){
         if(!check_pid(pid, shell)) break;
     }
 }
+
+// helper function to decide whether a job passed in evaluate function is a built in one
+/*
+char **argv, int argc is from separate_args
+*/
+bool check_is_builtin(char **argv, int argc){
+
+    // case 1: jobs
+    if(argc==1 && strcmp(argv[0], "jobs")==0){
+        return true;
+    }
+
+    return false;
+}
+
+// helper function to execute built in methods
+char *builtin_cmd(msh_t *shell, char **argv){
+
+    // case 1: jobs
+    if(strcmp(argv[0], "jobs")==0){
+        int index = 0;
+        for( ; index<shell->max_jobs; ++index){
+            if(shell->jobs[index]){
+                printf("[%d]\t%d\t%s\t%s\n",
+                shell->jobs[index]->jid,
+                shell->jobs[index]->pid,
+                (shell->jobs[index]->state<=1)?("RUNNNING"):("SUSPENDED"),
+                shell->jobs[index]->cmd_line
+                );
+            }
+        }
+    }
+
+}
+
+
+
+
 
 msh_t *alloc_shell(int max_jobs, int max_line, int max_history){
     msh_t* new_shell = (msh_t*) malloc (sizeof(msh_t));
@@ -165,6 +205,10 @@ char **separate_args(char *line, int *argc, bool *is_builtin){
         }
     }
     argv[*argc] = NULL;
+
+    // check here if the job is built in
+    *is_builtin = check_is_builtin(argv, *argc);
+
     return argv;
 }
 
@@ -175,10 +219,10 @@ int evaluate(msh_t *shell, char *line, int job_type){
         printf("error: reached the maximum line limit\n");
         return 0;
     }
-    // assume is_builtin_temp is true, this argument will be developed in the future
-    bool is_builtin_temp = true;
+    
     char **argv;
     int argc;
+    bool is_builtin_temp;
     // parse the line using separate_args
     argv = separate_args(line, &argc, &is_builtin_temp);
 
@@ -188,9 +232,18 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
     // check if it needs to exit
     if(argc==1 && strcmp("exit", argv[0])==0){
+        // printf("in evaluate: ready to exit\n");
         exit_shell(shell);
         return 1;
     }
+
+    // check if use built_in
+    if(is_builtin_temp){
+        builtin_cmd(shell, argv);
+        return 0;
+    }
+
+
 
     //out put the result
     int i=0;
@@ -229,12 +282,23 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
     // 1. Create a new child process using fork()
     if (pid  == 0){
-        // child running
+        // child running: built in / not built in
+
+        // UNBLOCK ALL
+        sigprocmask(SIG_SETMASK, &prev_one, NULL);
+        
         // 3. The child process will then call execve(...) to execute the job.
         if (execve(argv[0], argv, environ) < 0) {
             printf("%s: Command not found.\n", argv[0]);
             exit(1);
         }
+        // if(is_builtin_temp){
+        //     builtin_cmd(shell, argv);
+        // }else{
+            
+        // }
+
+       
 
     }else{
         // parent running
@@ -297,6 +361,7 @@ void exit_shell(msh_t *shell){
                 pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, 0);
                 if (term_pid > 0) {
                     // The job has completed
+                    // printf("in exit_shell: term_pid: %d has completed\n", term_pid);
                     delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
                 }
             }

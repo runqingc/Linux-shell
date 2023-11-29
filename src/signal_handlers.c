@@ -28,7 +28,8 @@ void sigchld_handler(int sig)
     sigset_t mask_all, prev_all;
     pid_t pid;
     sigfillset(&mask_all);
-    while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) { /* Reap child */
+    while ((pid = waitpid(-1, NULL, WNOHANG | WUNTRACED)) > 0) { /* Reap child */
+        // printf("in sigchld_handler: pid=%d\n", pid);
         sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
         /* Delete the child from the job list */
         delete_job(shell->jobs, shell->max_jobs, pid);
