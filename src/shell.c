@@ -60,6 +60,10 @@ bool check_is_builtin(char **argv, int argc){
         return true;
     }else if(argc==1 && strcmp(argv[0], "history")==0){
         return true;
+    }else if (argc==2 && strcmp(argv[0], "bg")==0){
+        return true;
+    }else if (argc==2 && strcmp(argv[0], "fg")==0){
+        return true;
     }
 
     return false;
@@ -83,8 +87,38 @@ char *builtin_cmd(msh_t *shell, char **argv){
             }
         }
     }else if(strcmp(argv[0], "history")==0){
+        // case 2: history
         // printf("in builtin_cmd: history\n");
         print_history(shell->histories);
+    }else if(strcmp(argv[0], "bg")==0){
+        // case "bg"
+        
+        // convert the string eg "%71" to int 71
+        pid_t pid= atoi(argv[1] + 1);
+        // loops the job array to find the pid of suspended job
+        int index = 0;
+        for( ; index<shell->max_jobs; ++index){
+            if(shell->jobs[index] && shell->jobs[index]->state==SUSPENDED && shell->jobs[index]->pid==pid){
+                printf("in builtin_cmd, sent signal to pid=%d:\n", shell->jobs[index]->pid);
+                shell->jobs[index]->state = BACKGROUND;
+                kill(-shell->jobs[index]->pid, SIGCONT);
+            }
+        }
+    }else if(strcmp(argv[0], "fg")==0){
+        // convert the string eg "%71" to int 71
+        pid_t pid= atoi(argv[1] + 1);
+        // loops the job array to find the pid of the suspended job
+        int index = 0;
+        for( ; index<shell->max_jobs; ++index){
+            if(shell->jobs[index] && shell->jobs[index]->state==SUSPENDED && shell->jobs[index]->pid==pid){
+                // printf("in builtin_cmd, sent signal to pid=%d:\n", shell->jobs[index]->pid);
+                shell->jobs[index]->state = FOREGROUND;
+                kill(-shell->jobs[index]->pid, SIGCONT);
+                // wait fg to complete
+                waitfg(pid, shell);
+            }
+        }
+
     }
 
 }
