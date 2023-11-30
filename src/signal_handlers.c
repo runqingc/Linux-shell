@@ -24,19 +24,19 @@ extern msh_t* shell;
 */
 void sigchld_handler(int sig)
 {
-    printf("in sigchld_handler\n");
+    // printf("in sigchld_handler\n");
     int olderrno = errno;
     sigset_t mask_all, prev_all;
     pid_t pid;
     sigfillset(&mask_all);
     int status;
     while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) { /* Reap child */
-        printf("in sigchld_handler: pid=%d\n", pid);
+        // printf("in sigchld_handler: pid=%d\n", pid);
         sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
         /* Delete the child from the job list if it has terminated*/
         if (WIFEXITED(status) || WIFSIGNALED(status)){
             delete_job(shell->jobs, shell->max_jobs, pid);
-            printf("in sigchld_handler deleted: pid=%d\n", pid);
+            // printf("in sigchld_handler deleted: pid=%d\n", pid);
         }
         sigprocmask(SIG_SETMASK, &prev_all, NULL);
     }

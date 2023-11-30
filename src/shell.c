@@ -20,6 +20,30 @@ extern char **environ;
 
 
 
+// hepler functions:
+// helper function to check if waitfg can break
+bool check_pid_finish(pid_t pid, msh_t *shell);
+// helper function to check if all the jobs has finished
+bool check_all_finish(msh_t *shell);
+// helper function to wait foreground job to finish
+void waitfg(pid_t pid, msh_t *shell);
+// helper function to decide whether a job passed in evaluate function is a built in one
+bool check_is_builtin(char **argv, int argc);
+// helper function to switch case and call execute built in methods
+char *builtin_cmd(msh_t *shell, char **argv);
+
+
+// built in execution functions:
+// 1. jobs
+void builtin_cmd_jobs(msh_t *shell, char **argv);
+
+// 4. bg <job>
+void builtin_cmd_bg(msh_t *shell, char **argv);
+// 5. fg<job>
+void builtin_cmd_fg(msh_t *shell, char **argv);
+// 6. kill SIG_NUM PID
+void builtin_cmd_kill(msh_t *shell, char **argv);
+
 // helper function to check if waitfg can break
 // 2 situation can break: get deleted from jobs array; suspended
 bool check_pid_finish(pid_t pid, msh_t *shell){
@@ -38,14 +62,28 @@ bool check_pid_finish(pid_t pid, msh_t *shell){
     return true;
 }
 
+// helper function to check if all the jobs has finished
+bool check_all_finish(msh_t *shell){
+    if(!shell) return false;
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index]!=NULL){
+        //    printf("in exit-check_all_finish: pid=%d, cmd=%s is still running.", 
+        //    shell->jobs[index]->pid, shell->jobs[index]->cmd_line);
+           return false;
+        }
+    }
+    return true;
+}
+
 
 // helper function to wait foreground job to finish
 void waitfg(pid_t pid, msh_t *shell){
     while(1){
-        sleep(1);
         // [ask TA] should I loop over the job list to see if the foreground job was deleted? 
         // if the specific freground job deleted or suspended, then break
         if(check_pid_finish(pid, shell)) break;
+        sleep(1);
     }
 }
 
@@ -64,17 +102,33 @@ bool check_is_builtin(char **argv, int argc){
         return true;
     }else if (argc==2 && strcmp(argv[0], "fg")==0){
         return true;
+    }else if(argc==3 && strcmp(argv[0], "kill")==0){
+        return true;
     }
 
     return false;
 }
 
-// helper function to execute built in methods
+// helper function to switch case and call execute built in methods
 char *builtin_cmd(msh_t *shell, char **argv){
 
-    // case 1: jobs
     if(strcmp(argv[0], "jobs")==0){
-        // printf("in builtin_cmd: jobs\n");
+        builtin_cmd_jobs(shell, argv);
+    }else if(strcmp(argv[0], "history")==0){
+        // printf("in builtin_cmd: history\n");
+        print_history(shell->histories);
+    }else if(strcmp(argv[0], "bg")==0){
+        builtin_cmd_bg(shell, argv);
+    }else if(strcmp(argv[0], "fg")==0){
+        builtin_cmd_fg(shell, argv);
+    }else if(strcmp(argv[0], "kill")==0){
+        builtin_cmd_kill(shell, argv);
+    }
+    return NULL;
+}
+
+void builtin_cmd_jobs(msh_t *shell, char **argv){
+    // printf("in builtin_cmd_jobs: jobs\n");
         int index = 0;
         for( ; index<shell->max_jobs; ++index){
             if(shell->jobs[index]){
@@ -86,44 +140,88 @@ char *builtin_cmd(msh_t *shell, char **argv){
                 );
             }
         }
-    }else if(strcmp(argv[0], "history")==0){
-        // case 2: history
-        // printf("in builtin_cmd: history\n");
-        print_history(shell->histories);
-    }else if(strcmp(argv[0], "bg")==0){
-        // case "bg"
-        
-        // convert the string eg "%71" to int 71
-        pid_t pid= atoi(argv[1] + 1);
-        // loops the job array to find the pid of suspended job
+}
+
+
+// put a SUSPENDED job in background
+void builtin_cmd_bg(msh_t *shell, char **argv){
+
+    // convert the string eg "%71" to int 71
+    pid_t pid= atoi(argv[1] + 1);
+    // loops the job array to find the pid of suspended job
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index] && shell->jobs[index]->state==SUSPENDED && shell->jobs[index]->pid==pid){
+            // printf("in builtin_cmd, sent signal to pid=%d:\n", shell->jobs[index]->pid);
+            shell->jobs[index]->state = BACKGROUND;
+            kill(-shell->jobs[index]->pid, SIGCONT);
+        }
+    }        
+}
+
+
+// put a SUSPENDED or BACKGROUNG job in foreground
+void builtin_cmd_fg(msh_t *shell, char **argv){
+    // convert the string eg "%71" to int 71
+    pid_t pid= atoi(argv[1] + 1);
+    // loops the job array to find the pid of the suspended job
+    int index = 0;
+    for( ; index<shell->max_jobs; ++index){
+        if(shell->jobs[index] && (shell->jobs[index]->state==SUSPENDED || shell->jobs[index]->state==BACKGROUND) && shell->jobs[index]->pid==pid){
+            // printf("in builtin_cmd, sent signal to pid=%d:\n", shell->jobs[index]->pid);
+            shell->jobs[index]->state = FOREGROUND;
+            kill(-shell->jobs[index]->pid, SIGCONT);
+            // wait fg to complete
+            waitfg(pid, shell);
+        }
+    }
+}
+
+void builtin_cmd_kill(msh_t *shell, char **argv){
+    int sig_num = atoi(argv[1]);
+    pid_t pid= atoi(argv[2]);
+    // printf("in builtin_cmd_kill: sig_num= %d , pid = %d\n", sig_num, pid);
+    if(sig_num==2 || sig_num==9){
+        // SIG_INT or SIGKILL [ask TA: should they be the same]
+        // loops the job array to find the job with this pid
         int index = 0;
         for( ; index<shell->max_jobs; ++index){
-            if(shell->jobs[index] && shell->jobs[index]->state==SUSPENDED && shell->jobs[index]->pid==pid){
-                printf("in builtin_cmd, sent signal to pid=%d:\n", shell->jobs[index]->pid);
-                shell->jobs[index]->state = BACKGROUND;
-                kill(-shell->jobs[index]->pid, SIGCONT);
+            if(shell->jobs[index] && shell->jobs[index]->pid==pid && shell->jobs[index]->pid != 0){
+                kill(-shell->jobs[index]->pid, SIGINT);
+                // printf("in builtin_cmd_kill SIGINT: 02 stoped a job pid=%d, index=%d\n", shell->jobs[index]->pid, index);
             }
         }
-    }else if(strcmp(argv[0], "fg")==0){
-        // convert the string eg "%71" to int 71
-        pid_t pid= atoi(argv[1] + 1);
-        // loops the job array to find the pid of the suspended job
+    }else if(sig_num==18){
+        // SIGCONT
         int index = 0;
         for( ; index<shell->max_jobs; ++index){
-            if(shell->jobs[index] && shell->jobs[index]->state==SUSPENDED && shell->jobs[index]->pid==pid){
-                // printf("in builtin_cmd, sent signal to pid=%d:\n", shell->jobs[index]->pid);
+            if(shell->jobs[index] && shell->jobs[index]->pid==pid && shell->jobs[index]->state==SUSPENDED){
                 shell->jobs[index]->state = FOREGROUND;
                 kill(-shell->jobs[index]->pid, SIGCONT);
                 // wait fg to complete
                 waitfg(pid, shell);
             }
         }
-
+    }else if(sig_num==19){
+        // SIGSTP
+        int index = 0;
+        for( ; index<shell->max_jobs; ++index){
+            if(shell->jobs[index] && shell->jobs[index]->pid==pid){
+                if (shell->jobs[index]->pid != 0) {
+                    // update the state of job to SUSPEND
+                    shell->jobs[index]->state = SUSPENDED;
+                    // Send the SIGINT signal to the foreground process group
+                    kill(-shell->jobs[index]->pid, SIGTSTP);
+                    // printf("in builtin_cmd_kill SIGSTP: 19 suspended a job pid=%d, index=%d\n", shell->jobs[index]->pid, index);
+                }
+            }
+        }
+    }else{
+        printf("error: invalid signal number. \n");
     }
 
+
 }
-
-
 
 
 
@@ -334,7 +432,7 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
         // UNBLOCK ALL
         sigprocmask(SIG_SETMASK, &prev_one, NULL);
-        
+        setpgid(0, 0);
         // 3. The child process will then call execve(...) to execute the job.
         if (execve(argv[0], argv, environ) < 0) {
             printf("%s: Command not found.\n", argv[0]);
@@ -361,7 +459,6 @@ int evaluate(msh_t *shell, char *line, int job_type){
         // UNBLOCK ALL
         sigprocmask(SIG_SETMASK, &prev_one, NULL);
 
-
         // 4. The parent process will block using waitpid, until the child process end
         if(job_type == FOREGROUND){
 
@@ -376,37 +473,33 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
     // reaps any completed background jobs
     // traverse the shell job array, if it is a background job, check if it has completed
-    int index = 0;
-    for( ; index<shell->max_jobs; ++index){
-        if(shell->jobs[index] && shell->jobs[index]->state==BACKGROUND){
-            pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, WNOHANG);
-            if (term_pid > 0) {
-                // The job has completed
-                delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
-            }
-        }
-    }
+    // int index = 0;
+    // for( ; index<shell->max_jobs; ++index){
+    //     if(shell->jobs[index] && shell->jobs[index]->state==BACKGROUND){
+    //         pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, WNOHANG);
+    //         if (term_pid > 0) {
+    //             // The job has completed
+    //             delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
+    //         }
+    //     }
+    // }
 
     return 0;
 }
 
 void exit_shell(msh_t *shell){
     if(shell){
-        // reaps any completed background jobs
-        // traverse the shell job array, if it is a background job, check if it has completed
-        int index = 0;
-        int child_status;
-        for( ; index<shell->max_jobs; ++index){
-            if(shell->jobs[index] && shell->jobs[index]->state==BACKGROUND){
-                pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, 0);
-                if (term_pid > 0) {
-                    // The job has completed
-                    // printf("in exit_shell: term_pid: %d has completed\n", term_pid);
-                    delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
-                }
-            }
+        
+        // check if all the jobs has completed, then exit
+        // similar to waitfg
+        while(1){
+            
+            // if all the job finshed (a.k.a deleted in jobs array), then exit
+            if(check_all_finish(shell)){
+                break;
+            };
+            sleep(1);
         }
-
 
         if(shell->jobs) free_jobs(shell->jobs, shell->max_jobs);
         free_history(shell->histories);
