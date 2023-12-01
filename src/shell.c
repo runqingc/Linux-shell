@@ -31,12 +31,15 @@ void waitfg(pid_t pid, msh_t *shell);
 bool check_is_builtin(char **argv, int argc);
 // helper function to switch case and call execute built in methods
 char *builtin_cmd(msh_t *shell, char **argv);
-
+// helper functions to check if a given command is "!N"
+bool check_is_n(char *argv);
 
 // built in execution functions:
 // 1. jobs
 void builtin_cmd_jobs(msh_t *shell, char **argv);
-
+// 2. history - uses the provided print_history function
+// 3. !N
+void builtin_cmd_n(msh_t *shell, char **argv);
 // 4. bg <job>
 void builtin_cmd_bg(msh_t *shell, char **argv);
 // 5. fg<job>
@@ -87,6 +90,8 @@ void waitfg(pid_t pid, msh_t *shell){
     }
 }
 
+
+
 // helper function to decide whether a job passed in evaluate function is a built in one
 /*
 char **argv, int argc is from separate_args
@@ -98,6 +103,9 @@ bool check_is_builtin(char **argv, int argc){
         return true;
     }else if(argc==1 && strcmp(argv[0], "history")==0){
         return true;
+    }else if(argc==1 && check_is_n(argv[0])){
+        // printf("in check_is_builtin: this is a !N command\n");
+        return true;
     }else if (argc==2 && strcmp(argv[0], "bg")==0){
         return true;
     }else if (argc==2 && strcmp(argv[0], "fg")==0){
@@ -105,8 +113,19 @@ bool check_is_builtin(char **argv, int argc){
     }else if(argc==3 && strcmp(argv[0], "kill")==0){
         return true;
     }
-
     return false;
+}
+
+bool check_is_n(char *argv){
+    if(!argv || argv[0]!='!' || strlen(argv)<=1) return false;
+    int i=1;
+    for( ; argv[i]!='\0'; ++i){
+        if(argv[i]<'0' || argv[i]>'9') {
+            // printf("in check_is_n argv[%d]: %c\n", i, argv[i]);
+            return false;}
+    }
+    // printf("in check_is_n: true\n");
+    return true;
 }
 
 // helper function to switch case and call execute built in methods
@@ -115,8 +134,10 @@ char *builtin_cmd(msh_t *shell, char **argv){
     if(strcmp(argv[0], "jobs")==0){
         builtin_cmd_jobs(shell, argv);
     }else if(strcmp(argv[0], "history")==0){
-        // printf("in builtin_cmd: history\n");
         print_history(shell->histories);
+    }else if(argv[0][0]=='!'){
+        // printf("in builtin_cmd: find !\n");
+        builtin_cmd_n(shell, argv);
     }else if(strcmp(argv[0], "bg")==0){
         builtin_cmd_bg(shell, argv);
     }else if(strcmp(argv[0], "fg")==0){
@@ -140,6 +161,36 @@ void builtin_cmd_jobs(msh_t *shell, char **argv){
                 );
             }
         }
+}
+
+void builtin_cmd_n(msh_t *shell, char **argv){
+    if(strlen(argv[0])<=1) return;
+    int history_id = atoi(argv[0] + 1)-1;
+    // find the target command line from history    
+    if(!(history_id <= shell->max_history && shell->histories->lines[history_id])){
+        return ;
+    }
+
+    int type;
+    char * cmd_line = malloc(strlen(shell->histories->lines[history_id]) + 1);
+    
+    strcpy(cmd_line, shell->histories->lines[history_id]);
+    add_line_history(shell->histories, cmd_line);
+
+    char *cur_job = parse_tok(cmd_line, &type);
+
+    // Process the first token and check for exit condition
+    evaluate(shell, cur_job, type);
+
+    // Process subsequent tokens if any
+    while (cur_job = parse_tok(NULL, &type)){
+        evaluate(shell, cur_job, type);
+    };
+
+    // Free the command line buffer at the end of each loop iteration
+    free(cmd_line);
+    cmd_line = NULL;
+    
 }
 
 
@@ -467,22 +518,6 @@ int evaluate(msh_t *shell, char *line, int job_type){
         }
         
     }
-
-    // [ask TA] should I move this to the front of evaluate function?
-    // Since evaluate function has multiple exits
-
-    // reaps any completed background jobs
-    // traverse the shell job array, if it is a background job, check if it has completed
-    // int index = 0;
-    // for( ; index<shell->max_jobs; ++index){
-    //     if(shell->jobs[index] && shell->jobs[index]->state==BACKGROUND){
-    //         pid_t term_pid = waitpid(shell->jobs[index]->pid, &child_status, WNOHANG);
-    //         if (term_pid > 0) {
-    //             // The job has completed
-    //             delete_job(shell->jobs, shell->max_jobs, shell->jobs[index]->pid);
-    //         }
-    //     }
-    // }
 
     return 0;
 }

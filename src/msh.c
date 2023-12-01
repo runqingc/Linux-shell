@@ -16,7 +16,7 @@ void test_evaluate();
 
 msh_t* shell = NULL;
 
-
+char* trim_history(const char* cmd_line);
 
 int main(int argc, char *argv[]){
 
@@ -82,9 +82,14 @@ int main(int argc, char *argv[]){
         // Replace the '\n' with '\0'
         cmd_line[strcspn(cmd_line, "\n")] = '\0';
 
-        // add history here
-        add_line_history(shell->histories, cmd_line);
-
+        // trim history here
+        char* modified_history = trim_history(cmd_line);
+        if(modified_history && strlen(modified_history)>0){
+            // printf("added a new line of history: %s\n", modified_history);
+            add_line_history(shell->histories, modified_history);
+            free(modified_history);
+        }
+        
         int type;
         int is_exit = 0;
         char *cur_job = parse_tok(cmd_line, &type);
@@ -94,11 +99,6 @@ int main(int argc, char *argv[]){
         if (is_exit) {
             break;
         }
-
-        // printf("in msh : %s\n", cmd_line);
-
-        
-
 
         // Process subsequent tokens if any
         while ((cur_job = parse_tok(NULL, &type)) && !(is_exit = evaluate(shell, cur_job, type)));
@@ -114,6 +114,64 @@ int main(int argc, char *argv[]){
     }
 
     return 0;
+}
+
+
+char* trim_history(const char* cmd_line) {
+    bool is_empty = true;
+    bool skip_command = false;
+    bool exit_found = false;
+    
+
+    // Allocate memory for modified_history
+    // It can't be longer than the original cmd_line, so use the same length.
+    char* modified_history = malloc(strlen(cmd_line) + 1);
+    if (modified_history == NULL) {
+        // Handle memory allocation failure
+        perror("Failed to allocate memory");
+        return NULL;
+    }
+
+    int j = 0; // Index for modified_history
+    
+    // Loop through each character until the null terminator is reached
+    for (int i = 0; cmd_line[i] != '\0'; i++) {
+        if(cmd_line[i]==' '){
+            modified_history[j++]=cmd_line[i];
+            continue;
+        }
+
+        // Check for 'exit'
+        if (strncmp(&cmd_line[i], "exit", 4) == 0) {
+            exit_found = true;
+            break; // Stop processing further as 'exit' is found
+        }
+
+        // Check for '!N' command
+        if (cmd_line[i] == '!' &&  ( i==0 || (i > 0 && cmd_line[i-1] == ' '))  && cmd_line[i+1] >= '0' && cmd_line[i+1] <= '9') {
+            skip_command = true; // Skip this command
+        }
+
+        if (cmd_line[i] == ';' || cmd_line[i] == '&' || (cmd_line[i] == ' ' && cmd_line[i+1] == '\0')) {
+            if (!is_empty && !skip_command) {
+                // End of a command, copy it if it's not empty and not a '!N' command
+                modified_history[j++] = cmd_line[i]; // Copy the command separator
+            }
+            is_empty = true; // Reset for the next command
+            skip_command = false; // Reset for the next command
+        } else if (cmd_line[i] != ' ') {
+            is_empty = false; // Non-space character found, so it's not an empty command
+            if (!skip_command) {
+                modified_history[j++] = cmd_line[i]; // Copy the character
+            }
+        }
+    }
+    
+    modified_history[j] = '\0'; // Null-terminate the modified history
+    // printf("in trim_history: %s\n", modified_history);
+    if(j>0 && modified_history)return modified_history;
+    return NULL;
+    
 }
 
 
