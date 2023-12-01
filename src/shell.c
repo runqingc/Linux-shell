@@ -429,8 +429,7 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
     // check if it needs to exit
     if(argc==1 && strcmp("exit", argv[0])==0){
-        // printf("in evaluate: ready to exit\n");
-        exit_shell(shell);
+        
         return 1;
     }
 

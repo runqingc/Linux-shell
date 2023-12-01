@@ -113,6 +113,10 @@ int main(int argc, char *argv[]){
         cmd_line = NULL;
     }
 
+
+    // printf("in evaluate: ready to exit\n");
+    exit_shell(shell);
+
     return 0;
 }
 
