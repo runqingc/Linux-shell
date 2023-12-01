@@ -249,8 +249,6 @@ void builtin_cmd_kill(msh_t *shell, char **argv){
             if(shell->jobs[index] && shell->jobs[index]->pid==pid && shell->jobs[index]->state==SUSPENDED){
                 shell->jobs[index]->state = FOREGROUND;
                 kill(-shell->jobs[index]->pid, SIGCONT);
-                // wait fg to complete
-                waitfg(pid, shell);
             }
         }
     }else if(sig_num==19){
