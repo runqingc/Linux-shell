@@ -70,7 +70,7 @@ bool check_all_finish(msh_t *shell){
     if(!shell) return false;
     int index = 0;
     for( ; index<shell->max_jobs; ++index){
-        if(shell->jobs[index]!=NULL){
+        if(shell->jobs[index]!=NULL && (shell->jobs[index]->state==BACKGROUND || shell->jobs[index]->state==FOREGROUND)){
         //    printf("in exit-check_all_finish: pid=%d, cmd=%s is still running.", 
         //    shell->jobs[index]->pid, shell->jobs[index]->cmd_line);
            return false;
@@ -531,6 +531,14 @@ int evaluate(msh_t *shell, char *line, int job_type){
 
 void exit_shell(msh_t *shell){
     if(shell){
+
+        // kill all suspended jobs
+        // int index = 0;
+        // for( ; index<shell->max_jobs; ++index){
+        //     if(shell->jobs[index] && shell->jobs[index]->state==SUSPENDED){
+        //         kill(-shell->jobs[index]->pid, SIGINT);
+        //     }
+        // }
         
         // check if all the jobs has completed, then exit
         // similar to waitfg
