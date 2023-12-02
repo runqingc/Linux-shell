@@ -230,7 +230,17 @@ void builtin_cmd_fg(msh_t *shell, char **argv){
 
 void builtin_cmd_kill(msh_t *shell, char **argv){
     int sig_num = atoi(argv[1]);
-    pid_t pid= atoi(argv[2]);
+    pid_t pid;
+    if(argv[2][0]!='%'){
+        pid = atoi(argv[2]);
+    }else{
+        int jid = atoi(argv[2]+1); 
+        if(jid>=0 && jid<=shell->max_jobs && shell->jobs[jid]){
+            pid = shell->jobs[jid]->pid;
+        }
+        
+    }
+    
     // printf("in builtin_cmd_kill: sig_num= %d , pid = %d\n", sig_num, pid);
     if(sig_num==2 || sig_num==9){
         // SIG_INT or SIGKILL [ask TA: should they be the same]
@@ -247,7 +257,7 @@ void builtin_cmd_kill(msh_t *shell, char **argv){
         int index = 0;
         for( ; index<shell->max_jobs; ++index){
             if(shell->jobs[index] && shell->jobs[index]->pid==pid && shell->jobs[index]->state==SUSPENDED){
-                shell->jobs[index]->state = FOREGROUND;
+                shell->jobs[index]->state = BACKGROUND;
                 kill(-shell->jobs[index]->pid, SIGCONT);
             }
         }
