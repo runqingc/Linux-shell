@@ -198,7 +198,16 @@ void builtin_cmd_n(msh_t *shell, char **argv){
 void builtin_cmd_bg(msh_t *shell, char **argv){
 
     // convert the string eg "%71" to int 71
-    pid_t pid= atoi(argv[1] + 1);
+    pid_t pid;
+    if(argv[1][0]!='%'){
+        pid = atoi(argv[1]);
+        // printf("in builtin_cmd_bg: pid = %d\n", pid);
+    }else{
+        int jid = atoi(argv[1]+1); 
+        if(jid>=0 && jid<=shell->max_jobs && shell->jobs[jid]){
+            pid = shell->jobs[jid]->pid;
+        }
+    }
     // loops the job array to find the pid of suspended job
     int index = 0;
     for( ; index<shell->max_jobs; ++index){
@@ -214,7 +223,15 @@ void builtin_cmd_bg(msh_t *shell, char **argv){
 // put a SUSPENDED or BACKGROUNG job in foreground
 void builtin_cmd_fg(msh_t *shell, char **argv){
     // convert the string eg "%71" to int 71
-    pid_t pid= atoi(argv[1] + 1);
+    pid_t pid;
+    if(argv[1][0]!='%'){
+        pid = atoi(argv[1]);
+    }else{
+        int jid = atoi(argv[1]+1); 
+        if(jid>=0 && jid<=shell->max_jobs && shell->jobs[jid]){
+            pid = shell->jobs[jid]->pid;
+        }
+    }
     // loops the job array to find the pid of the suspended job
     int index = 0;
     for( ; index<shell->max_jobs; ++index){
@@ -238,7 +255,6 @@ void builtin_cmd_kill(msh_t *shell, char **argv){
         if(jid>=0 && jid<=shell->max_jobs && shell->jobs[jid]){
             pid = shell->jobs[jid]->pid;
         }
-        
     }
     
     // printf("in builtin_cmd_kill: sig_num= %d , pid = %d\n", sig_num, pid);
