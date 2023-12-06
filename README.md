@@ -143,7 +143,7 @@ runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh < ./data/test001.in
 
 
 
-In hw7 we tested 
+
 
 ### 3.1 History Module
 
