@@ -38,23 +38,36 @@ runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh
 Test example:
 
 ```sh
-msh> ls -la .
-argv[0]=ls
-argv[1]=-la
-argv[2]=.
-argc=3
-msh> ls -la /mpcs/; cd .. & echo hello
-argv[0]=ls
-argv[1]=-la
-argv[2]=/mpcs/
-argc=3
-argv[0]=cd
-argv[1]=..
-argc=2
-argv[0]=echo
-argv[1]=hello
-argc=2
-msh> exit
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh
+msh> /usr/bin/echo hello
+hello
+msh> /usr/bin/ls -la .
+total 84
+drwxrwx--- 11 runqingc runqingc    16 Dec  1 16:38 .
+drwxrwx---  3 runqingc runqingc     3 Nov  4 19:31 ..
+drwxrwx---  2 runqingc runqingc     9 Dec  6 08:59 bin
+drwxrwx---  2 runqingc runqingc     5 Dec  1 16:38 data
+drwxrwx---  8 runqingc runqingc    15 Dec  2 21:29 .git
+-rw-rw----  1 runqingc runqingc   430 Nov  4 19:31 .gitignore
+msh> history
+    1   jobs
+    2   kill 16 %0
+    3   history
+    4   /usr/bin/seq 1 10;  /usr/bin/sleep 10 & /usr/bin/seq 1 5 ; /usr/bin/sleep 5; jobs;
+    5   history
+    6   /usr/bin/seq 1 10;  /usr/bin/sleep 10 & /usr/bin/seq 1 5 ; /usr/bin/sleep 5; jobs; 
+    7   /usr/bin/ls -la .
+    8   /usr/bin/echo hello
+    9   /usr/bin/ls -la .
+   10   history
+msh> /usr/bin/echo Counting: ; /usr/bin/seq 1 5
+Counting:
+1
+2
+3
+4
+5
+msh> exit  # use exit to quit the shell
 ```
 
 
@@ -72,15 +85,16 @@ The `-s NUMBER` represents the maximum number of command lines to store in the s
 Test examples:
 
 ```sh
-runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh -s 200 -l 5 -j 100
-msh> git push
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh -s 200 -l 20 -j 100
+msh> /usr/bin/echo Counting:                   
 error: reached the maximum line limit
-msh> ls .  
-argv[0]=ls
-argv[1]=.
-argc=2
-msh> exit
-runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh -l lamont -s 45
+msh> /usr/bin/seq 1 5                              
+1
+2
+3
+4
+5
+runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh -l runqingc -s 45
 usage: msg [-s NUMBER] [-j NUMBER] [-l NUMBER]
 runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh -s 45 -j 0
 usage: msg [-s NUMBER] [-j NUMBER] [-l NUMBER]
@@ -97,23 +111,30 @@ Msh can work with file redirection.
 For example, given a file: ``test001.in`` which is in the ``./data`` directory with the following contents: 
 
 ```sh
-ls -la .
-cd .. & cat file; 
+/usr/bin/seq 1 10;  /usr/bin/sleep 8 & 
+
+/usr/bin/seq 1 5 ; /usr/bin/sleep 5; jobs;
 ```
 
 Then you can use:
 ```sh
 runqingc@linux5:~/Intro_to_Unix/msh/msh-runqingc$ msh < ./data/test001.in 
-msh> argv[0]=ls
-argv[1]=-la
-argv[2]=.
-argc=3
-msh> argv[0]=cd
-argv[1]=..
-argc=2
-argv[0]=cat
-argv[1]=file
-argc=2
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+1
+2
+3
+4
+5
+[0]      2328686 RUNNNING          /usr/bin/sleep 8 
 ```
 
 
