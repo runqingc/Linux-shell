@@ -13,7 +13,7 @@ This is a linux shell in C that supports:
 
 
 
-## 2. How to run basic msh (hw 5-6)
+## 2. How to run basic msh 
 
 
 
@@ -118,7 +118,7 @@ argc=2
 
 
 
-## 3. Advanced msh testing(hw 7)
+## 3. Advanced msh testing
 
 
 
